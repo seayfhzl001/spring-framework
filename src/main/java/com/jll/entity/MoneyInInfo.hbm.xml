@@ -4,7 +4,8 @@
 <hibernate-mapping>
 	<class name="com.jll.entity.MoneyInInfo" table="MoneyInInfo">
 		<id name="recordID" type="java.lang.Integer">
-			<generator class="increment" />
+			<!-- <generator class="increment" /> -->
+			<generator class="identity" />
 		</id>
 		<property name="userID" type="java.lang.String">
             <column name="UserID" length="50" />
