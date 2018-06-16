@@ -53,6 +53,7 @@ public class TlCouldController
 		  @RequestParam(name="rechargeType",required = true) String rechargeType,
 		  @RequestParam(name="amount",required = true) float amount)
   {
+	  logger.debug("userName :: " + logger+"   payerName::"+payerName);
     Map<String, Object> ret = new HashMap<>();
     
     String comment = Utils.produce6DigitsCaptchaCode();

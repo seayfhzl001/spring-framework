@@ -103,7 +103,7 @@ public class TlCloudServiceImpl implements TlCloudService
 		depositRecord.setBackType("存款");
 		depositRecord.setBackTypeText("系统充值");
 		//depositRecord.setBankUser(bankUser);
-		depositRecord.setFollows("网银充值成功");
+		depositRecord.setFollows("网银充值成功-" + depositOrder.getRechargeType());
 		//depositRecord.setId(id);
 		depositRecord.setIfAutoTransfer(0);
 		depositRecord.setIfDeal(0);

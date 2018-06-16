@@ -123,6 +123,9 @@
             <tx:method name="save*" propagation="REQUIRED"/>
             
             <tx:method name="update*" propagation="REQUIRED"/>
+            
+            <tx:method name="process*" propagation="REQUIRED"/>
+            
             <!-- other methods use the default transaction settings (see below) -->
             <tx:method name="*"/>
         </tx:attributes>

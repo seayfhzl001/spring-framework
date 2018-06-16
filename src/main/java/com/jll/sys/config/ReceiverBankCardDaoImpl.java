@@ -47,7 +47,7 @@ public class ReceiverBankCardDaoImpl extends HibernateDaoSupport implements Rece
 
 	@Override
 	public List<ReceiverBankCard> queryReceiverBankCard() {
-		String sql = "from ReceiverBankCard where state='启用' and bankUrl='99'";
+		String sql = "from ReceiverBankCard where state='启用' and bankUrl='99' order by id";
 		Query<ReceiverBankCard> query = getSessionFactory().getCurrentSession().createQuery(sql, ReceiverBankCard.class);
 		List<ReceiverBankCard> cards = new ArrayList<>();
 		try {			

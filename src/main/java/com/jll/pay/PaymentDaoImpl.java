@@ -51,7 +51,7 @@ public class PaymentDaoImpl extends HibernateDaoSupport implements PaymentDao
 		try {
 			depositOrder = query.getSingleResult();
 		}catch(NoResultException ex) {
-			
+			ex.printStackTrace();
 		}
 		return depositOrder;
 	}

@@ -31,7 +31,15 @@ public class Message {
 		ERROR_PAYMENT_TLCLOUD_FAILED_CANCEL_ORDER("010003", "Failed to cancel order!!"),
 		ERROR_PAYMENT_DEPOSIT_ERROR_ORDER("010004", "No order existing!!"),
 		
-		ERROR_SYSTEM_CONFIG_NO_RECEIVER_BANK_CARD("020001", "No Receiver bank card is specified!!");
+		ERROR_PAYMENT_CAIPAY_FAILED_CANCEL_ORDER("010005", "configuration of cai-pay is wrong!!"),
+		ERROR_PAYMENT_CAIPAY_FAILED_SIGNATURE_PARAMS("010006", "Can not sign the parameters!!"),
+		
+		
+		ERROR_SYSTEM_CONFIG_NO_RECEIVER_BANK_CARD("020001", "No Receiver bank card is specified!!"),
+		
+		ERROR_SYSTEM_AUTH_NO_ACCESS_PERMISSION("030001", "No Permission to access resource!!")
+		
+		;
 		
 		
 		

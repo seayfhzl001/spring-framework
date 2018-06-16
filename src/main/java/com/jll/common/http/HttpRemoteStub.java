@@ -35,9 +35,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class HttpRemoteStub {
-	private final static int SOCKET_TIMEOUT = 5000;
+	private final static int SOCKET_TIMEOUT = 10000;
 	
-	private final static int CONNECT_TIMEOUT = 5000;
+	private final static int CONNECT_TIMEOUT = 10000;
 	
 	/**
 	 * synchronously sending the http GET method
@@ -198,7 +198,7 @@ public class HttpRemoteStub {
 			
 			if(contentType.equals("application/json")) {
 				entity = produceJSONEntity(params);
-			}else if(contentType.equals("")) {
+			}else if(contentType.equals("application/x-www-form-urlencoded")) {
 				entity = produceFormEntity(params);
 			}
 		}
@@ -211,9 +211,18 @@ public class HttpRemoteStub {
 		HttpEntity entity = null;
 		Iterator<String> ite = params.keySet().iterator();
 		while(ite.hasNext()) {
+			NameValuePair pair = null;
 			String key = ite.next();
-			String val = (String)params.get(key);
-			NameValuePair pair = new BasicNameValuePair(key, val);
+			Object val = params.get(key);
+			if(val.getClass().getName().contains("Integer")
+					|| val.getClass().getName().contains("Float")
+					|| val.getClass().getName().contains("Long")
+					|| val.getClass().getName().contains("Double")) {
+				
+				pair = new BasicNameValuePair(key, String.valueOf(val));
+			}else {
+				pair = new BasicNameValuePair(key, val.toString());
+			}
 			pairs.add(pair);
 		}		
 		

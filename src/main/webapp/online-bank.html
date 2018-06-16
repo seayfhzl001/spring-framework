@@ -38,6 +38,17 @@
 	    	var selZfqdName = $("#zfqd").find("option:selected").text();
 	    	var payCardNum = $("#pay_card_num").val();
 	    	var payerName = $("#order_man").val();
+	    	
+	    	var orderURL = "/lottery/app/tlCloud/orders";
+	    	var domain = parseDomain();
+	    	
+	    	if(typeof domain == 'undefined' || domain.length == 0){
+	    		$.messager.alert('错误', '当前页面地址错误！', 'Error');
+	    		return;
+	    	}
+	    	
+	    	orderURL = domain+":8080" + orderURL;
+	    	
             if (je == "") {
                 $.messager.alert('提示', '请正确输入充值金额！', 'warning');
                 return;
@@ -69,14 +80,15 @@
                 $.messager.alert('提示', '请正确输入充值金额！', 'warning');
                 return;
             }
+            
             //提交form到相应的地址
             if (isvalide == "1") {
                 if(typeof userName !="undefined" && userName != ""){
-                	$.post( "http://45.120.155.190:8080/lottery/app/tlCloud/orders", 
+                	$.post( orderURL, 
                 	{
                 		rechargeType:selZfqd,
                 		amount:je,
-                		userName:userName,
+                		userName:decodeURI(userName),
                 		payCardNumber:payCardNum,
                 		payerName:payerName
                 	},
@@ -265,6 +277,7 @@
     function validAliPay(){
         //var parentUrl = document.referrer;
         var parentUrl = window.location.href;
+        
         userName = parseUserName(parentUrl);
         /*var optionSize_curr = $("select[name='zfqd'] option").size();
 
@@ -311,33 +324,74 @@
 
     function changeUrl(userName){
         $("#handPay").click(function(){
-            this.href="http://zhmyb.top/PC/BankList/Hand?source=0&"+userName;
-            //this.click();
+        	var domain = parseDomain();
+        	if(typeof domain != 'undefined' && domain.length > 0){
+        		this.href = domain + "/PC/BankList/Hand?source=0&"+userName;
+            }else{
+            	this.href = "http://zhmyb.top/PC/BankList/Hand?source=0&"+userName;
+            }
         });
 
         $("#manualDeposit").on("click",function(){
-                 this.href="http://zhmyb.top/PC/BankList/Index?source=1&"+userName;
+        	var domain = parseDomain();
+        	if(typeof domain != 'undefined' && domain.length > 0){
+        		this.href = domain + "/PC/BankList/Index?source=1&"+userName;
+            }else{
+            	this.href="http://zhmyb.top/PC/BankList/Index?source=1&"+userName;
+            }
+            
         });
     }
     
     
     function queryOnlineBankCard(){
-	var clickCount = parseInt($("#zfqd").attr("data-clickCount"));
-	if(clickCount == 0){
-    		$.get( "http://45.120.155.190:8080/lottery/app/configuration/online/bankAccounts", function( data ) {
-    			if(data.status == 1){
-    				jQuery("#zfqd").empty();
-    			
-    				var onlineBankCards = data.data;
-    				for(var i = 0; i< onlineBankCards.length; i++){
-    					$( "#zfqd" ).append("<option value='"+onlineBankCards[i].remark+"'>"+onlineBankCards[i].bankName+"</option>");
-    				}
-    			}
-  			
-		});
-	}
-	clickCount += 1;
-	$("#zfqd").attr("data-clickCount", clickCount+"");
+		var clickCount = parseInt($("#zfqd").attr("data-clickCount"));
+		if(clickCount == 0){
+			var domain = parseDomain();
+			var url = ':8080/lottery/app/configuration/online/bankAccounts';
+            if(typeof domain != 'undefined' && domain.length > 0){
+            	url = domain + url;
+            }else{
+            	url = 'http://45.120.155.190:8080/lottery/app/configuration/online/bankAccounts';
+            }
+	    	$.get( url, function( data ) {
+	    		if(data.status == 1){
+	    			jQuery("#zfqd").empty();
+	    			
+	    			var onlineBankCards = data.data;
+	    			for(var i = 0; i< onlineBankCards.length; i++){
+	    				$( "#zfqd" ).append("<option value='"+onlineBankCards[i].remark+"'>"+onlineBankCards[i].bankName+"</option>");
+	    			}
+	    		}
+	  			
+			});
+		}
+		clickCount += 1;
+		$("#zfqd").attr("data-clickCount", clickCount+"");
+    }
+    
+    
+    function parseDomain(){
+    	var currURL = location.href;
+    	var domain = '';
+    	
+    	if(currURL.indexOf("http") >= 0){
+    		if(currURL.indexOf("/", currURL.indexOf("http") + 7) > 0){
+    			domain = currURL.substring(0, currURL.indexOf("/", currURL.indexOf("http") + 7));
+    		}else{
+    			domain = currURL;
+    		}
+    		
+    	}
+    	
+    	if(typeof domain == 'undefined' || domain.length == 0){
+    		return '';
+    	}
+    	
+    	if(domain.indexOf(":", 7) > 0){
+    		domain = domain.substring(0, domain.indexOf(":", 7));
+    	}
+    	return domain;
     }
     </script>
 
