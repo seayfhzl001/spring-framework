@@ -312,18 +312,20 @@ public class ZhihPayServiceImpl implements ZhihPayService
 			}else if(valObj.getClass().getName().equals("java.lang.Boolean")) {
 				v = ((Boolean) valObj).toString();
 			}
-			//String v = (String) entry.getValue();
-			if (StringUtils.isNotEmpty(v) && !"sign".equals(key) && !"key".equals(key)) {
-				sb.append(k + "=" + v + "&");
+			if (StringUtils.isNotEmpty(v) && !"sign".equals(key)) {
+				buffer.append(key + "=" + v + "&");
 			}
 		}
-		/*
-		pushParams.put("currency", currency);
-		pushParams.put("transType", transType);
-		pushParams.put("receivableType", merchant.getReceivableType());
-		pushParams.put("prdAmt", numFormat.format(1));*/
 		
-		String sign = RSAUtils.signByPrivateKey(pushParams, merchantKey);
+		if(buffer.toString().endsWith("&")) {
+			buffer.deleteCharAt(buffer.length()-1);
+		}
+		String sign = null;
+		try {
+			sign = RSAUtils.signByPrivateKey(buffer.toString(), merchantKey);
+		} catch (Exception e) {
+			
+		}
 		if(sign == null || sign.length() == 0) {
 			return null;
 		}
