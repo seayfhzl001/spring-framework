@@ -1,4 +1,4 @@
-package com.jll.pay.caiPay;
+package com.jll.pay.zhihpay;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -6,11 +6,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -18,6 +16,7 @@ import java.util.TreeMap;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jll.common.constants.Constants;
 import com.jll.common.constants.Message;
 import com.jll.common.http.HttpRemoteStub;
-import com.jll.common.utils.MD5Signature;
+import com.jll.common.utils.RSAUtils;
 import com.jll.entity.MoneyInInfo;
 import com.jll.entity.TbBankback;
 import com.jll.entity.TbUsers;
@@ -43,12 +42,12 @@ import com.jll.sys.config.ReceiverBankCardDao;
 import com.jll.user.UserDao;
 
 @Configuration
-@PropertySource("classpath:caifu.properties")
+@PropertySource("classpath:zhih-pay.properties")
 @Service
 @Transactional
-public class CaiPayServiceImpl implements CaiPayService
+public class ZhihPayServiceImpl implements ZhihPayService
 {
-	private Logger logger = Logger.getLogger(CaiPayServiceImpl.class);
+	private Logger logger = Logger.getLogger(ZhihPayServiceImpl.class);
 	/*private final String FAILED_CODE = "1";
 	
 	private final String SUCCESS_CODE = "0";*/
@@ -58,7 +57,7 @@ public class CaiPayServiceImpl implements CaiPayService
 	private final String SUCCESS_CODE = "1";
 	
 	@Resource
-	CaiPayDao tlCloudDao;
+	ZhihPayDao tlCloudDao;
 	
 	@Resource
 	PaymentDao payDao;
@@ -75,55 +74,30 @@ public class CaiPayServiceImpl implements CaiPayService
 	@Value("${api.server}")
 	private String apiServer;
 	  
-	@Value("${api.scanQRPay}")
+	@Value("${api.scan_pay}")
 	private String apiScanQRPay;
 	  
-	@Value("${api.onLineBankPay}")
+	@Value("${api.online_bank_pay}")
 	private String apiOnLineBankPay;
 	  
 	@Value("${cons.versionId}")
 	private String versionId;
-	
-	@Value("${cons.currency}")
-	private String currency;
-	
-	@Value("${cons.transType}")
-	private String transType;
-	
+		
 	@Value("${cons.signType}")
 	private String signType;
-  
-	/*@Value("${cons.receivableType}")
-	private String receivableType;*/
 	
-	/*@Value("${cons.scan_pay.merId}")
-	private String scanPayMerId;*/
-	
-	@Value("${api.scanQRPay.asynNotifyUrl}")
+	@Value("${api.scan_pay.notify_url}")
 	private String scanPayAsynNOtifyURL;
 	
-	@Value("${api.scanQRPay.synNotifyUrl}")
-	private String scanPaySynNOtifyURL;	
-	
-	/*@Value("${cons.scan_pay.key}")
-	private String scanPayKey;*/
-	
-	/*@Value("${cons.online_bank_pay.merId}")
-	private String onlineBankPayMerId;*/
-	
-	@Value("${api.onLineBankPay.asynNotifyUrl}")
-	private String onlineBankPayAsynNotifyUrl;
-	
-	@Value("${api.onLineBankPay.synNotifyUrl}")
-	private String onlineBankPaysynNotifyUrl;
-	
+	@Value("${api.online_bank_pay.notify_url}")
+	private String onlineBankPayAsynNotifyUrl;	
 	
 	@Value("${merchant1.merId}")
-	private String merchant1MerId;
+	private String merchantMerId;
 	
 	@Value("${merchant1.key}")
-	private String merchant1Key;
-	
+	private String merchantKey;
+	/*
 	@Value("${merchant1.payMode}")
 	private String merchant1PayMode;
 	
@@ -156,13 +130,13 @@ public class CaiPayServiceImpl implements CaiPayService
 	private String merchant3PayMode;
 	
 	@Value("${merchant3.receivableType}")
-	private String merchant3ReceivableType;
+	private String merchant3ReceivableType;*/
 	
-	private List<Merchant> merchants/* = new ArrayList<>()*/;
+	//private List<Merchant> merchants/* = new ArrayList<>()*/;
 	
 	@PostConstruct
 	public void init() {
-		merchants = new ArrayList<>();
+		/*merchants = new ArrayList<>();
 		
 		Merchant merchant = new Merchant();
 		merchant.setKey(merchant1Key);
@@ -186,7 +160,7 @@ public class CaiPayServiceImpl implements CaiPayService
 		List<String> payModes3 = Arrays.asList(merchant3PayMode.split("\\|"));
 		merchant3.setPayModes(payModes3);
 		merchant3.setReceivableType(merchant3ReceivableType);
-		merchants.add(merchant3);
+		merchants.add(merchant3);*/
 	}
 	
 	@Override
@@ -306,31 +280,50 @@ public class CaiPayServiceImpl implements CaiPayService
 	}
 	
 	private SortedMap<String, Object> produceParamsOfScanQRPay(Map<String, Object> params){
-		Merchant merchant = queryCurrMerchant((String)params.get("rechargeType"));
-		
-		if(merchant == null) {
-			return null;
-		}
-		
-		DecimalFormat numFormat = new DecimalFormat("##0");
+				
+		DecimalFormat numFormat = new DecimalFormat("##0.00");
 		MoneyInInfo depositOrder = (MoneyInInfo)params.get("depositOrder");
 		SortedMap<String, Object> pushParams = new TreeMap<>();
-		pushParams.put("versionId", versionId);
-		pushParams.put("orderAmount", numFormat.format(((Float)params.get("amount"))*100));
-		pushParams.put("orderDate", params.get("createTime"));
+		StringBuffer buffer = new StringBuffer();
+		
+		pushParams.put("merchant_code", merchantMerId);
+		pushParams.put("service_type", (String)params.get("rechargeType"));
+		pushParams.put("notify_url", params.get("asynNotifyURL"));
+		pushParams.put("interface_version", versionId);
+		pushParams.put("client_ip", params.get("reqIP"));
+		pushParams.put("sign_type", signType);
+		pushParams.put("order_no", String.valueOf(depositOrder.getRecordID()));
+		pushParams.put("order_time", params.get("createTime"));
+		pushParams.put("order_amount", numFormat.format(params.get("amount")));
+		pushParams.put("product_name", "lottery");
+		Iterator<String> keys = pushParams.keySet().iterator();
+		while(keys.hasNext()) {
+			String key = keys.next();
+			Object valObj = pushParams.get(key);
+			String v = "";
+			if(valObj.getClass().getName().equals("java.lang.String")) {
+				v = (String)valObj;
+			}else if(valObj.getClass().getName().equals("java.lang.Integer")) {
+				v = String.valueOf(((Integer)valObj));
+			}else if(valObj.getClass().getName().equals("java.lang.Float")) {
+				v = String.valueOf(((Float) valObj));
+			}else if(valObj.getClass().getName().equals("java.lang.Long")) {
+				v = String.valueOf(((Long) valObj));
+			}else if(valObj.getClass().getName().equals("java.lang.Boolean")) {
+				v = ((Boolean) valObj).toString();
+			}
+			//String v = (String) entry.getValue();
+			if (StringUtils.isNotEmpty(v) && !"sign".equals(key) && !"key".equals(key)) {
+				sb.append(k + "=" + v + "&");
+			}
+		}
+		/*
 		pushParams.put("currency", currency);
 		pushParams.put("transType", transType);
-		pushParams.put("asynNotifyUrl", params.get("asynNotifyURL"));
-		pushParams.put("synNotifyUrl", params.get("synNotifyURL"));
-		pushParams.put("signType", signType);
-		pushParams.put("merId", merchant.getMerId());
-		pushParams.put("prdOrdNo", String.valueOf(depositOrder.getRecordID()));
-		pushParams.put("payMode", (String)params.get("rechargeType"));
 		pushParams.put("receivableType", merchant.getReceivableType());
-		pushParams.put("prdAmt", numFormat.format(1));
-		pushParams.put("prdName", "lottery");
+		pushParams.put("prdAmt", numFormat.format(1));*/
 		
-		String sign = MD5Signature.createSign(pushParams, merchant.getKey());
+		String sign = RSAUtils.signByPrivateKey(pushParams, merchantKey);
 		if(sign == null || sign.length() == 0) {
 			return null;
 		}
@@ -343,20 +336,20 @@ public class CaiPayServiceImpl implements CaiPayService
 		DecimalFormat numFormat = new DecimalFormat("##0");
 		MoneyInInfo depositOrder = (MoneyInInfo)params.get("depositOrder");
 		SortedMap<String, Object> pushParams = new TreeMap<>();
-		Merchant merchant = queryCurrMerchant((String)params.get("rechargeType"));
+		/*Merchant merchant = queryCurrMerchant((String)params.get("rechargeType"));
 		
 		if(merchant == null) {
 			return null;
-		}
+		}*/
 		pushParams.put("versionId", versionId);
 		pushParams.put("orderAmount", numFormat.format(((Float)params.get("amount"))*100));
 		pushParams.put("orderDate", params.get("createTime"));
-		pushParams.put("currency", currency);
+		//pushParams.put("currency", currency);
 		if(params.get("accNoType") != null) {
 			pushParams.put("accNoType", params.get("accNoType"));
 		}
 		pushParams.put("accountType", params.get("accountType"));
-		pushParams.put("transType", transType);
+		//pushParams.put("transType", transType);
 		pushParams.put("asynNotifyUrl", params.get("asynNotifyURL"));
 		pushParams.put("synNotifyUrl", params.get("synNotifyURL"));
 		if(params.get("bankCardNo") != null) {
@@ -378,21 +371,21 @@ public class CaiPayServiceImpl implements CaiPayService
 			pushParams.put("cvn2", (String)params.get("cvn2"));
 		}
 		pushParams.put("signType", signType);
-		pushParams.put("merId", merchant.getMerId());
+		//pushParams.put("merId", merchant.getMerId());
 		pushParams.put("prdOrdNo", String.valueOf(depositOrder.getRecordID()));
 		pushParams.put("payMode", (String)params.get("rechargeType"));
 		pushParams.put("tranChannel", (String)params.get("tranChannel"));
-		pushParams.put("receivableType", merchant.getReceivableType());
+		//pushParams.put("receivableType", merchant.getReceivableType());
 		pushParams.put("prdAmt", numFormat.format(1));
 		pushParams.put("prdName", "lottery");
 		pushParams.put("prdDesc", "lottery");
 		pushParams.put("pnum", "1");
-		String sign = MD5Signature.createSign(pushParams, merchant.getKey());
+		/*String sign = Signature.createSign(pushParams, merchant.getKey());
 		if(sign == null || sign.length() == 0) {
 			return null;
-		}
+		}*/
 		
-		pushParams.put("signData", sign);
+		//pushParams.put("signData", sign);
 		return pushParams;
 	}
 	
@@ -400,14 +393,14 @@ public class CaiPayServiceImpl implements CaiPayService
 	public String processScanPay(Map<String, Object> params) {
 		
 		Date createTime = new Date();
-		SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		URI url = null;
 		boolean isSuccess = true;
 		SortedMap<String, Object> pushParams = new TreeMap<>();
 		Map<String, String> reqHeaders = new HashMap<>();
 		
 		params.put("createTime", createTime);
-		String ret = this.saveDepositOrder(params);
+		String ret = saveDepositOrder(params);
 		if(!ret.equals(String.valueOf(Message.status.SUCCESS.getCode()))) {
 			return ret;
 		}
@@ -418,10 +411,7 @@ public class CaiPayServiceImpl implements CaiPayService
 		params.put("createTime", format.format(createTime));
 		String reqHost = (String)params.get("reqHost");
 		String reqContext = (String)params.get("reqContext");
-		params.put("asynNotifyURL", onlineBankPayAsynNotifyUrl.replace("{host}", reqHost).replace("{context}", reqContext));
-		params.put("synNotifyURL", onlineBankPaysynNotifyUrl.replace("{host}", reqHost).replace("{context}", reqContext));
-		params.put("asynNotifyURL", scanPayAsynNOtifyURL);
-		params.put("synNotifyURL", scanPaySynNOtifyURL);
+		params.put("asynNotifyURL", scanPayAsynNOtifyURL.replace("{host}", reqHost).replace("{context}", reqContext));
 		
 		pushParams = produceParamsOfScanQRPay(params);
 		if(pushParams == null || pushParams.size() == 0) {
@@ -490,7 +480,7 @@ public class CaiPayServiceImpl implements CaiPayService
 		String reqHost = (String)params.get("reqHost");
 		String reqContext = (String)params.get("reqContext");
 		params.put("asynNotifyURL", onlineBankPayAsynNotifyUrl.replace("{host}", reqHost).replace("{context}", reqContext));
-		params.put("synNotifyURL", onlineBankPaysynNotifyUrl.replace("{host}", reqHost).replace("{context}", reqContext));
+		//params.put("synNotifyURL", onlineBankPaysynNotifyUrl.replace("{host}", reqHost).replace("{context}", reqContext));
 		
 		pushParams = produceParamsOfOnlinePay(params);
 		if(pushParams == null || pushParams.size() == 0) {
@@ -577,13 +567,13 @@ public class CaiPayServiceImpl implements CaiPayService
 		MoneyInInfo depositOrder = depositOrderDao.queryDepositOrderById(Integer.parseInt(notices.getPrdOrdNo()));
 		String depositChannel = depositOrder.getRechargeType();
 		String channelCode = Constants.CAI_PAY_MODE.getCodeByDesc(depositChannel);
-		Merchant merchant = queryCurrMerchant(channelCode);
-		sign = MD5Signature.createSign(pushParams, merchant.getKey());
+		/*Merchant merchant = queryCurrMerchant(channelCode);
+		sign = Signature.createSign(pushParams, merchant.getKey());
 		if(sign == null || sign.length() == 0
 				|| notices.getSignData() == null
 				|| notices.getSignData().length() == 0) {
 			return false;
-		}
+		}*/
 		
 		return sign.equals(notices.getSignData());
 	}
@@ -635,16 +625,16 @@ public class CaiPayServiceImpl implements CaiPayService
 		return String.valueOf(Message.status.SUCCESS.getCode());
 	}
 	
-	private Merchant queryCurrMerchant(String payMode) {
+	/*private Merchant queryCurrMerchant(String payMode) {
 		for(Merchant mer : merchants) {
 			if(mer.getPayModes().contains(payMode)) {
 				return mer;
 			}
 		}
 		return null;
-	}
+	}*/
 	
-	class Merchant{
+	/*class Merchant{
 		private String merId;
 		
 		private String key;
@@ -686,5 +676,5 @@ public class CaiPayServiceImpl implements CaiPayService
 		}
 		
 		
-	}
+	}*/
 }

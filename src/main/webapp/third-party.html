@@ -207,13 +207,14 @@ input[type=checkbox], input[type=radio] {
 						$("#Form1").hide();
 						$("#Form2").hide();
 						$("#Form3").show();
-						$('#qr_code').qrcode(data.data.qrcode)
-						/* $("#qr_code").qrcode({
-							render: "table", //table方式
-							width: 200, //宽度
-							height:200, //高度
+						//$('#qr_code').qrcode(data.data.qrcode)
+						$("#qr_code").qrcode({
+							render: "canvas", //table方式
+							width: 260, //宽度
+							height:260, //高度
+							correctLevel:0,
 							text: data.data.qrcode //任意内容
-						}); */
+						});
 					} else {
 						$.messager.alert('错误', '操作失败！', 'Error');
 					}
@@ -383,7 +384,7 @@ input[type=checkbox], input[type=radio] {
 
 <body style="padding: 0; border: 0; margin: 0; height: auto">
 	<form id="Form1" method="post" action="/PC/BankList/Hand" target="_self">
-		<input type="hidden" name="max_amount" id="max_amount" value="10" />
+		<input type="hidden" name="max_amount" id="max_amount" value="1" />
 		<input type="hidden" name="username" id="username" /> 
 		<input type="hidden" name="wechat_max_amount" id="wechat_max_amount" value="2000" />
 		<div class="top_up wrapper">

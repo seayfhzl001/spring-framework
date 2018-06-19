@@ -1,4 +1,4 @@
-package com.jll.common;
+package com.jll.common.utils;
 
 import java.util.Random;
 

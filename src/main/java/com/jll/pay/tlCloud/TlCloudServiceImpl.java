@@ -20,10 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jll.common.Utils;
 import com.jll.common.constants.Constants;
 import com.jll.common.constants.Message;
 import com.jll.common.http.HttpRemoteStub;
+import com.jll.common.utils.Utils;
 import com.jll.entity.MoneyInInfo;
 import com.jll.entity.ReceiverBankCard;
 import com.jll.entity.TbBankback;

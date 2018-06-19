@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.jll.common.Utils;
 import com.jll.common.constants.Message;
+import com.jll.common.utils.Utils;
 import com.jll.entity.MoneyInInfo;
 import com.jll.entity.ReceiverBankCard;
 import com.jll.entity.display.TlCloudNotices;

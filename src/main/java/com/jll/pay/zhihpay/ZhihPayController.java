@@ -1,4 +1,4 @@
-package com.jll.pay.caiPay;
+package com.jll.pay.zhihpay;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -28,13 +28,13 @@ import com.jll.sys.config.ReceiverBankCardService;
 
 
 @RestController
-@RequestMapping({"/caiPay"})
-public class CaiPayController
+@RequestMapping({"/zhihPay"})
+public class ZhihPayController
 {
-	private Logger logger = Logger.getLogger(CaiPayController.class);
+	private Logger logger = Logger.getLogger(ZhihPayController.class);
   
 	@Resource
-	CaiPayService caiPayService;
+	ZhihPayService zhihPayService;
   
 	@Resource
 	TlCloudService tlCloudService;
@@ -54,8 +54,8 @@ public class CaiPayController
   
   @RequestMapping(value={"/scanPay"}, method={RequestMethod.POST}, produces={"application/json"})
   public Map<String, Object> scanPay(@RequestParam(name = "userName", required = true) String userName,
-		  @RequestParam(name = "amount", required = true) float amount,
-		  @RequestParam(name = "payMode", required = true) String payMode,
+		  @RequestParam(name = "serviceType", required = true) String serviceType,
+		  @RequestParam(name = "orderAmount", required = true) float orderAmount,
 		  HttpServletRequest request)
   {
     Map<String, Object> ret = new HashMap<>();    
@@ -63,13 +63,14 @@ public class CaiPayController
     String comment = Utils.produce6DigitsCaptchaCode();
 	Map<String, Object> params = new HashMap<>();
 	params.put("userName", userName);
-	params.put("rechargeType", payMode);
-	params.put("amount", amount);
+	params.put("rechargeType", serviceType);
+	params.put("amount", orderAmount);
 	params.put("comment", comment);
 	params.put("reqHost", request.getServerName() +":"+ request.getServerPort());
 	params.put("reqContext", request.getServletContext().getContextPath());
+	params.put("reqIP", request.getRemoteAddr());
 	String ip = request.getRemoteAddr();
-	boolean isAuthorized = caiPayService.isAuthorized(ip);
+	boolean isAuthorized = zhihPayService.isAuthorized(ip);
 	if(!isAuthorized) {
 		logger.info("The reuqest IP is ::: " + (ip == null?"null":ip) +"  isAuthroized ::: " + isAuthorized);
 		
@@ -79,7 +80,7 @@ public class CaiPayController
     	return ret;
     }
 	
-	String retCode = caiPayService.processScanPay(params);
+	String retCode = zhihPayService.processScanPay(params);
 	if(retCode.equals(String.valueOf(Message.status.SUCCESS.getCode()))) {
 		String qrCode = params.get("qrcode") == null?null:(String)params.get("qrcode");
 		if(qrCode == null || qrCode.length() == 0) {
@@ -136,7 +137,7 @@ public class CaiPayController
 		params.put("comment", comment);
 		params.put("reqHost", request.getServerName() +":"+ request.getServerPort());
 		params.put("reqContext", request.getServletContext().getContextPath());
-		boolean isValid = caiPayService.isValid(params);
+		boolean isValid = zhihPayService.isValid(params);
 		
 		if(!isValid) {
 			ret.put(Message.KEY_STATUS, Message.status.FAILED.getCode());
@@ -146,7 +147,7 @@ public class CaiPayController
 		}
 		
 		
-		boolean isAuthorized = caiPayService.isAuthorized(ip);
+		boolean isAuthorized = zhihPayService.isAuthorized(ip);
 		if(!isAuthorized) {
 			logger.info("The reuqest IP is ::: " + (ip == null?"null":ip) +"  isAuthroized ::: " + isAuthorized);
 			
@@ -156,7 +157,7 @@ public class CaiPayController
 	    	//return ret;
 	    }
 		
-		String retCode = caiPayService.processOnlineBankPay(params);
+		String retCode = zhihPayService.processOnlineBankPay(params);
 		
 		try {
 			response.getWriter().print((String)params.get("redirect"));
@@ -185,7 +186,7 @@ public class CaiPayController
  * @param userName
  * @return        {"success": true}
  */
-  @RequestMapping(value={"/notices/{noticeType}"}, method={RequestMethod.POST}, consumes={MediaType.APPLICATION_FORM_URLENCODED_VALUE}, produces={MediaType.TEXT_PLAIN_VALUE})
+  @RequestMapping(value={"/notices"}, method={RequestMethod.POST}, consumes={MediaType.APPLICATION_FORM_URLENCODED_VALUE}, produces={MediaType.TEXT_PLAIN_VALUE})
   public String scanPayNotices(@PathVariable("noticeType") int noticeType ,
 		  CaiPayNotices notices,
 		  HttpServletRequest request)
@@ -203,12 +204,12 @@ public class CaiPayController
     	return "FAIL";
     }
     
-    if(!caiPayService.isNoticesValid(notices, noticeType)) {
+    if(!zhihPayService.isNoticesValid(notices, noticeType)) {
     	return "FAIL";
     }
     
     
-    boolean isAuthorized = caiPayService.isAuthorized(ip);
+    boolean isAuthorized = zhihPayService.isAuthorized(ip);
     
     logger.info("The reuqest IP is ::: " + (ip == null?"null":ip) +"  isAuthroized ::: " + isAuthorized);
     
@@ -217,7 +218,7 @@ public class CaiPayController
     	return "FAIL";
     }
     
-    boolean isExisting = caiPayService.isOrderExisting(orderIdInt);
+    boolean isExisting = zhihPayService.isOrderExisting(orderIdInt);
     
     logger.info("The order ::: " + orderIdInt +"  isExisting :::" + isExisting);
     
@@ -225,7 +226,7 @@ public class CaiPayController
     	return "FAIL";
     }
     
-    caiPayService.receiveDepositOrder(orderIdInt, orderAmount);
+    zhihPayService.receiveDepositOrder(orderIdInt, orderAmount);
         
     return "SUCCESS";
   }
@@ -262,7 +263,7 @@ public class CaiPayController
     	return ret;
 	}
     
-    boolean isAuthorized = caiPayService.isAuthorized(ip);
+    boolean isAuthorized = zhihPayService.isAuthorized(ip);
     
     logger.info("The reuqest IP is ::: " + (ip == null?"null":ip) +"  isAuthroized ::: " + isAuthorized);
     
@@ -271,7 +272,7 @@ public class CaiPayController
     	return ret;
     }
     
-    boolean isExisting = caiPayService.isOrderExisting(orderIdInt);
+    boolean isExisting = zhihPayService.isOrderExisting(orderIdInt);
     
     logger.info("The order ::: " + orderIdInt +"  isExisting :::" + isExisting);
     
@@ -280,7 +281,7 @@ public class CaiPayController
     	return ret;
     }
     
-    caiPayService.receiveDepositOrder(orderIdInt);
+    zhihPayService.receiveDepositOrder(orderIdInt);
         
     ret.put(KEY_RESPONSE_STATUS, true);
     return ret;
